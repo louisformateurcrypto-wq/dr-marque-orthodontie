@@ -1,118 +1,95 @@
-/* ============================================
-   Dr Antoine MARQUE — Orthodontiste Compiègne
-   script.js
-   ============================================ */
+// ===== NAVBAR SCROLL =====
+const navbar = document.getElementById('navbar');
 
-/* ---- Navbar scroll ---- */
-(function () {
-  const navbar = document.querySelector('.navbar');
-  if (!navbar) return;
-
-  function onScroll() {
-    navbar.classList.toggle('scrolled', window.scrollY > 20);
+window.addEventListener('scroll', () => {
+  if (window.scrollY > 50) {
+    navbar.classList.add('scrolled');
+  } else {
+    navbar.classList.remove('scrolled');
   }
+});
 
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
-})();
+// ===== BURGER MENU =====
+const burger = document.getElementById('burger');
+const mobileMenu = document.getElementById('mobileMenu');
+const mobileLinks = document.querySelectorAll('.mobile-menu a');
 
-/* ---- Mobile burger menu ---- */
-(function () {
-  const burger = document.querySelector('.nav-burger');
-  const mobileNav = document.querySelector('.nav-mobile');
-  if (!burger || !mobileNav) return;
+burger.addEventListener('click', () => {
+  burger.classList.toggle('open');
+  mobileMenu.classList.toggle('open');
+  document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : '';
+});
 
-  burger.addEventListener('click', function () {
-    const isOpen = mobileNav.classList.toggle('open');
-    burger.classList.toggle('active', isOpen);
-    burger.setAttribute('aria-expanded', String(isOpen));
-    document.body.style.overflow = isOpen ? 'hidden' : '';
+mobileLinks.forEach(link => {
+  link.addEventListener('click', () => {
+    burger.classList.remove('open');
+    mobileMenu.classList.remove('open');
+    document.body.style.overflow = '';
   });
+});
 
-  // Close on link click
-  mobileNav.querySelectorAll('a').forEach(function (link) {
-    link.addEventListener('click', function () {
-      mobileNav.classList.remove('open');
-      burger.classList.remove('active');
-      burger.setAttribute('aria-expanded', 'false');
-      document.body.style.overflow = '';
-    });
-  });
+// ===== SCROLL REVEAL =====
+const revealElements = document.querySelectorAll('.reveal');
 
-  // Close on outside click
-  document.addEventListener('click', function (e) {
-    if (!navbar.contains(e.target) && !mobileNav.contains(e.target)) {
-      mobileNav.classList.remove('open');
-      burger.classList.remove('active');
-      burger.setAttribute('aria-expanded', 'false');
-      document.body.style.overflow = '';
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
     }
   });
-})();
+}, {
+  threshold: 0.12,
+  rootMargin: '0px 0px -40px 0px'
+});
 
-/* ---- Scroll reveal ---- */
-(function () {
-  if (!('IntersectionObserver' in window)) {
-    document.querySelectorAll('.reveal').forEach(function (el) {
-      el.classList.add('visible');
-    });
-    return;
-  }
+revealElements.forEach(el => observer.observe(el));
 
-  const observer = new IntersectionObserver(
-    function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
+// ===== SMOOTH ACTIVE NAV =====
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav-links a:not(.btn-rdv-nav)');
+
+const sectionObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.getAttribute('id');
+      navLinks.forEach(link => {
+        link.style.color = link.getAttribute('href') === `#${id}` ? 'var(--sage)' : '';
       });
-    },
-    { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
-  );
-
-  document.querySelectorAll('.reveal').forEach(function (el) {
-    observer.observe(el);
+    }
   });
-})();
+}, {
+  threshold: 0.4
+});
 
-/* ---- Active nav link on scroll ---- */
-(function () {
-  const sections = document.querySelectorAll('section[id]');
-  const navLinks = document.querySelectorAll('.nav-links a[href^="#"]');
-  if (!sections.length || !navLinks.length) return;
+sections.forEach(section => sectionObserver.observe(section));
 
-  const observer = new IntersectionObserver(
-    function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          const id = entry.target.getAttribute('id');
-          navLinks.forEach(function (link) {
-            link.classList.toggle('active-link', link.getAttribute('href') === '#' + id);
-          });
-        }
+// ===== COUNTER ANIMATION =====
+function animateCounter(el, target, suffix = '') {
+  let current = 0;
+  const increment = target / 60;
+  const timer = setInterval(() => {
+    current += increment;
+    if (current >= target) {
+      current = target;
+      clearInterval(timer);
+    }
+    el.textContent = Math.floor(current) + suffix;
+  }, 25);
+}
+
+const counterObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting && !entry.target.dataset.animated) {
+      entry.target.dataset.animated = 'true';
+      const counters = entry.target.querySelectorAll('[data-count]');
+      counters.forEach(counter => {
+        const target = parseInt(counter.dataset.count);
+        const suffix = counter.dataset.suffix || '';
+        animateCounter(counter, target, suffix);
       });
-    },
-    { threshold: 0.35 }
-  );
-
-  sections.forEach(function (section) {
-    observer.observe(section);
+    }
   });
-})();
+}, { threshold: 0.5 });
 
-/* ---- Smooth anchor scroll ---- */
-(function () {
-  document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
-    anchor.addEventListener('click', function (e) {
-      const target = document.querySelector(this.getAttribute('href'));
-      if (!target) return;
-      e.preventDefault();
-      const navbarHeight = document.querySelector('.navbar')
-        ? document.querySelector('.navbar').offsetHeight
-        : 72;
-      const top = target.getBoundingClientRect().top + window.scrollY - navbarHeight - 8;
-      window.scrollTo({ top: top, behavior: 'smooth' });
-    });
-  });
-})();
+const heroStats = document.querySelector('.hero-stats');
+if (heroStats) counterObserver.observe(heroStats);
